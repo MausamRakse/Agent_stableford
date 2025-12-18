@@ -17,12 +17,12 @@ async function verify() {
   console.log('1️⃣  Checking Node.js version...');
   const nodeVersion = process.version;
   const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
-  
-  if (majorVersion >= 18) {
+
+  if (majorVersion >= 22) {
     console.log(`   ✅ Node.js ${nodeVersion} (OK)\n`);
     checks.push(true);
   } else {
-    console.log(`   ❌ Node.js ${nodeVersion} (Need v18+)\n`);
+    console.log(`   ❌ Node.js ${nodeVersion} (Need v22+)\n`);
     checks.push(false);
   }
 
@@ -67,7 +67,7 @@ async function verify() {
   console.log('4️⃣  Checking .env configuration...');
   try {
     const envContent = await fs.readFile('.env', 'utf-8');
-    
+
     if (envContent.includes('GOOGLE_API_KEY') && !envContent.includes('your_gemini_api_key_here')) {
       console.log('   ✅ .env file exists with API key\n');
       checks.push(true);
@@ -100,7 +100,7 @@ async function verify() {
   console.log('6️⃣  Checking package configuration...');
   try {
     const pkg = JSON.parse(await fs.readFile('package.json', 'utf-8'));
-    
+
     const requiredDeps = [
       '@google/generative-ai',
       '@langchain/google-genai',
@@ -111,7 +111,7 @@ async function verify() {
     ];
 
     const missingDeps = requiredDeps.filter(dep => !pkg.dependencies?.[dep]);
-    
+
     if (missingDeps.length === 0) {
       console.log('   ✅ All required dependencies listed\n');
       checks.push(true);
@@ -129,7 +129,7 @@ async function verify() {
   console.log('='.repeat(60));
   const passedChecks = checks.filter(c => c).length;
   const totalChecks = checks.length;
-  
+
   console.log(`\n📊 VERIFICATION RESULTS: ${passedChecks}/${totalChecks} checks passed\n`);
 
   if (passedChecks === totalChecks) {
