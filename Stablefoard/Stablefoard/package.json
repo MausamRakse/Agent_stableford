@@ -1,0 +1,31 @@
+{
+  "name": "stock-analysis-agent",
+  "version": "1.0.0",
+  "description": "AI-powered stock analysis agent using Google Gemini, LangChain, and LangGraph",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node src/example.js",
+    "verify": "node verify-setup.js",
+    "ui": "node src/ui-server.js"
+  },
+  "keywords": [
+    "stock-analysis",
+    "ai-agent",
+    "gemini",
+    "langchain",
+    "langgraph"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/core": "^0.3.0",
+    "@langchain/google-genai": "^0.1.0",
+    "@langchain/langgraph": "^0.2.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  }
+}
