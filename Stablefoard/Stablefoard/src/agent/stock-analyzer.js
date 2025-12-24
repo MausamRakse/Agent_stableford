@@ -22,16 +22,16 @@ export class StockAnalyzer {
    */
   async analyze(inputData) {
     console.log('🔍 Starting stock analysis...\n');
-    
+
     // Step 1: Validate input
     console.log('📊 Step 1: Validating input data...');
     const inputValidation = validateInput(inputData);
-    
+
     if (!inputValidation.success) {
       throw new Error(`Input validation failed:\n${inputValidation.errors.join('\n')}`);
     }
     console.log('✅ Input validation passed\n');
-    
+
     // Step 2: Extract key metrics
     console.log('📈 Step 2: Extracting key metrics...');
     const keyMetrics = extractKeyMetrics(inputData);
@@ -40,17 +40,17 @@ export class StockAnalyzer {
     console.log(`   - SIS Score: ${keyMetrics.sisScore}`);
     console.log(`   - SSIS Score: ${keyMetrics.ssisScore}`);
     console.log(`   - Qualitative Rating: ${keyMetrics.qualitativeRating}/5\n`);
-    
+
     // Step 3: Generate analysis
     console.log('🤖 Step 3: Generating AI analysis...');
     const analysisPrompt = formatPrompt(ANALYSIS_PROMPT, {
       input_data: JSON.stringify(inputData, null, 2)
     });
-    
+
     const fullPrompt = `${SYSTEM_PROMPT}\n\n${analysisPrompt}`;
     const rawResponse = await invokeWithRetry(this.model, fullPrompt);
     console.log('✅ Analysis generated\n');
-    
+
     // Step 4: Parse response
     console.log('📝 Step 4: Parsing response...');
     let report;
@@ -61,33 +61,24 @@ export class StockAnalyzer {
       throw new Error(`Failed to generate valid JSON report: ${error.message}`);
     }
     console.log('✅ Response parsed successfully\n');
-    
+
     // Step 5: Validate output
     console.log('🔍 Step 5: Validating output...');
     const outputValidation = validateOutput(report);
-    
+
     if (!outputValidation.success) {
       console.warn('⚠️  Output validation warnings:', outputValidation.errors);
       // Continue anyway but log warnings
     } else {
       console.log('✅ Output validation passed\n');
     }
-    
-    // Step 6: Enrich report with metadata
-    console.log('✨ Step 6: Enriching report with metadata...');
-    const enrichedReport = {
-      ...report,
-      metadata: {
-        stockSymbol: inputData.stock.symbol,
-        stockName: inputData.stock.name,
-        analysisDate: new Date().toISOString(),
-        asOfDate: inputData.stock.asOf,
-        keyMetrics: keyMetrics,
-        modelUsed: this.model.modelName || 'gemini-1.5-pro',
-        version: '1.0.0'
-      }
-    };
-    
+
+
+    // Step 6: Return final report
+    console.log('✅ Analysis complete!\n');
+    console.log(`📊 Overall Score: ${report.overallScore}/100`);
+    console.log(`💡 Recommendation: ${report.recommendation}\n`);
+
     // Store in history
     this.analysisHistory.push({
       timestamp: new Date().toISOString(),
@@ -95,12 +86,9 @@ export class StockAnalyzer {
       recommendation: report.recommendation,
       score: report.overallScore
     });
-    
-    console.log('✅ Analysis complete!\n');
-    console.log(`📊 Overall Score: ${report.overallScore}/100`);
-    console.log(`💡 Recommendation: ${report.recommendation}\n`);
-    
-    return enrichedReport;
+
+    return report;
+
   }
 
   /**
@@ -110,14 +98,14 @@ export class StockAnalyzer {
    */
   async batchAnalyze(stockDataArray) {
     console.log(`\n🔄 Starting batch analysis for ${stockDataArray.length} stocks...\n`);
-    
+
     const results = [];
-    
+
     for (let i = 0; i < stockDataArray.length; i++) {
       console.log(`\n${'='.repeat(60)}`);
       console.log(`Processing stock ${i + 1}/${stockDataArray.length}`);
       console.log(`${'='.repeat(60)}\n`);
-      
+
       try {
         const result = await this.analyze(stockDataArray[i]);
         results.push({
@@ -133,9 +121,9 @@ export class StockAnalyzer {
         });
       }
     }
-    
+
     console.log(`\n✅ Batch analysis complete: ${results.filter(r => r.success).length}/${stockDataArray.length} successful\n`);
-    
+
     return results;
   }
 

@@ -245,8 +245,12 @@ function renderHtml() {
     }
 
     workflowEl.addEventListener('change', () => {
-      modeBadge.textContent = workflowEl.checked ? 'Mode: LangGraph Workflow' : 'Mode: Simple Analyzer';
+      modeBadge.textContent = workflowEl.checked ? 'Mode: LangGraph Parallel Workflow ⚡' : 'Mode: Simple Analyzer';
     });
+    
+    // Default to Parallel Workflow
+    workflowEl.checked = true;
+    modeBadge.textContent = 'Mode: LangGraph Parallel Workflow ⚡';
 
     runBtn.addEventListener('click', async () => {
       const raw = inputEl.value.trim();
@@ -332,7 +336,7 @@ async function handleAnalyze(req, res) {
       return;
     }
 
-    const useWorkflow = mode === 'workflow';
+    const useWorkflow = mode === 'workflow' || true; // FORCE PARALLEL WORKFLOW FOR SPEED
     let result;
 
     if (useWorkflow) {

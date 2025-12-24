@@ -56,153 +56,85 @@ export class StockAnalysisWorkflow {
     // Node 1: Input Validation
     workflow.addNode('validate_input', async (state) => {
       console.log('🔍 Node 1: Validating input...');
-      
       const validation = validateInput(state.inputData);
-      
       if (!validation.success) {
-        return {
-          ...state,
-          validatedInput: false,
-          errors: [...state.errors, ...validation.errors],
-          step: 'error'
-        };
+        return { ...state, validatedInput: false, errors: [...state.errors, ...validation.errors], step: 'error' };
       }
-      
-      return {
-        ...state,
-        validatedInput: true,
-        step: 'extract_metrics'
-      };
+      return { ...state, validatedInput: true, step: 'parallel_processing' };
     });
 
-    // Node 2: Extract Key Metrics
-    workflow.addNode('extract_metrics', async (state) => {
-      console.log('📊 Node 2: Extracting key metrics...');
-      
-      const metrics = extractKeyMetrics(state.inputData);
-      
-      return {
-        ...state,
-        keyMetrics: metrics,
-        step: 'generate_analysis'
-      };
-    });
+    // Node 2: Parallel Processing (Metrics + AI Analysis) - FASTEST METHOD
+    workflow.addNode('parallel_processing', async (state) => {
+      console.log('⚡ Node 2: Running Parallel Processing (Metrics + Analysis)...');
 
-    // Node 3: Generate Analysis
-    workflow.addNode('generate_analysis', async (state) => {
-      console.log('🤖 Node 3: Generating analysis with Gemini...');
-      
       try {
-        const analysisPrompt = formatPrompt(ANALYSIS_PROMPT, {
-          input_data: JSON.stringify(state.inputData, null, 2)
-        });
-        
-        const fullPrompt = `${SYSTEM_PROMPT}\n\n${analysisPrompt}`;
-        const response = await invokeWithRetry(this.model, fullPrompt);
-        
+        // Run both operations simultaneously for maximum speed
+        const [metrics, rawAnalysis] = await Promise.all([
+          // Task A: Extract Metrics (Cpu bound, fast)
+          (async () => {
+            console.log('  📊 Extracting metrics...');
+            return extractKeyMetrics(state.inputData);
+          })(),
+          // Task B: Generate Analysis (Network bound, slow)
+          (async () => {
+            console.log('  🤖 Generating AI analysis...');
+            const analysisPrompt = formatPrompt(ANALYSIS_PROMPT, {
+              input_data: JSON.stringify(state.inputData, null, 2)
+            });
+            const fullPrompt = `${SYSTEM_PROMPT}\n\n${analysisPrompt}`;
+            return await invokeWithRetry(this.model, fullPrompt);
+          })()
+        ]);
+
         return {
           ...state,
-          rawAnalysis: response,
+          keyMetrics: metrics,
+          rawAnalysis: rawAnalysis,
           step: 'parse_response'
         };
       } catch (error) {
-        return {
-          ...state,
-          errors: [...state.errors, error.message],
-          step: 'error'
-        };
+        return { ...state, errors: [...state.errors, error.message], step: 'error' };
       }
     });
 
-    // Node 4: Parse Response
+    // Node 3: Parse Response
     workflow.addNode('parse_response', async (state) => {
-      console.log('📝 Node 4: Parsing response...');
-      
+      console.log('📝 Node 3: Parsing response...');
       try {
         const parsed = parseJsonResponse(state.rawAnalysis);
-        
-        return {
-          ...state,
-          parsedReport: parsed,
-          step: 'validate_output'
-        };
+        return { ...state, parsedReport: parsed, step: 'enrich_report' };
       } catch (error) {
-        return {
-          ...state,
-          errors: [...state.errors, `Parse error: ${error.message}`],
-          step: 'error'
-        };
+        return { ...state, errors: [...state.errors, `Parse error: ${error.message}`], step: 'error' };
       }
     });
 
-    // Node 5: Validate Output
-    workflow.addNode('validate_output', async (state) => {
-      console.log('✅ Node 5: Validating output...');
-      
-      const validation = validateOutput(state.parsedReport);
-      
-      if (!validation.success) {
-        console.warn('⚠️  Output validation warnings:', validation.errors);
-      }
-      
-      return {
-        ...state,
-        validatedReport: validation.success,
-        step: 'enrich_report'
-      };
-    });
-
-    // Node 6: Enrich Report
+    // Node 4: Enrich Report (Finalizing)
     workflow.addNode('enrich_report', async (state) => {
-      console.log('✨ Node 6: Enriching report...');
-      
-      const enriched = {
-        ...state.parsedReport,
-        metadata: {
-          stockSymbol: state.inputData.stock.symbol,
-          stockName: state.inputData.stock.name,
-          analysisDate: new Date().toISOString(),
-          asOfDate: state.inputData.stock.asOf,
-          keyMetrics: state.keyMetrics,
-          modelUsed: this.model.modelName || 'gemini-1.5-pro',
-          version: '1.0.0'
-        }
-      };
-      
-      return {
-        ...state,
-        finalReport: enriched,
-        step: 'complete'
-      };
+      console.log('✨ Node 4: Finalizing report...');
+      // Return ONLY the parsed report from the AI, no extra metadata
+      return { ...state, finalReport: state.parsedReport, step: 'complete' };
     });
 
-    // Node 7: Error Handler
+    // Node 5: Error Handler
     workflow.addNode('error', async (state) => {
       console.error('❌ Workflow error:', state.errors);
-      
       return {
         ...state,
-        finalReport: {
-          error: true,
-          errors: state.errors,
-          message: 'Analysis failed'
-        },
+        finalReport: { error: true, errors: state.errors, message: 'Analysis failed' },
         step: 'complete'
       };
     });
 
     // Define edges (workflow flow)
     workflow.setEntryPoint('validate_input');
-    
+
     workflow.addConditionalEdges(
       'validate_input',
-      (state) => state.validatedInput ? 'extract_metrics' : 'error'
+      (state) => state.validatedInput ? 'parallel_processing' : 'error'
     );
-    
-    workflow.addEdge('extract_metrics', 'generate_analysis');
-    workflow.addEdge('generate_analysis', 'parse_response');
-    workflow.addEdge('parse_response', 'validate_output');
-    workflow.addEdge('validate_output', 'enrich_report');
+
+    workflow.addEdge('parallel_processing', 'parse_response');
+    workflow.addEdge('parse_response', 'enrich_report');
     workflow.addEdge('enrich_report', END);
     workflow.addEdge('error', END);
 
@@ -216,7 +148,7 @@ export class StockAnalysisWorkflow {
    */
   async execute(inputData) {
     console.log('🚀 Starting LangGraph workflow execution...\n');
-    
+
     const initialState = {
       inputData,
       validatedInput: false,
@@ -231,9 +163,9 @@ export class StockAnalysisWorkflow {
 
     try {
       const result = await this.graph.invoke(initialState);
-      
+
       console.log('\n✅ Workflow completed successfully!\n');
-      
+
       return result.finalReport;
     } catch (error) {
       console.error('❌ Workflow execution failed:', error);

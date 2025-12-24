@@ -23,7 +23,7 @@ async function main() {
 
     // Parse command line arguments
     const args = process.argv.slice(2);
-    
+
     if (args.length === 0) {
       console.log('Usage: node src/index.js <input-file.json> [output-file.json] [--workflow]');
       console.log('\nOptions:');
@@ -44,7 +44,7 @@ async function main() {
 
     // Choose analyzer
     let result;
-    
+
     if (useWorkflow) {
       console.log('🔄 Using LangGraph workflow mode\n');
       const workflow = new StockAnalysisWorkflow();
@@ -63,7 +63,6 @@ async function main() {
     console.log('\n' + '='.repeat(60));
     console.log('📊 ANALYSIS SUMMARY');
     console.log('='.repeat(60));
-    console.log(`Stock: ${result.metadata?.stockName || 'N/A'} (${result.metadata?.stockSymbol || 'N/A'})`);
     console.log(`Overall Score: ${result.overallScore}/100`);
     console.log(`Recommendation: ${result.recommendation}`);
     console.log(`\n📄 Full report saved to: ${outputFile}`);

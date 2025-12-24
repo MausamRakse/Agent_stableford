@@ -81,7 +81,15 @@ Generate a structured JSON report with the following sections:
     - Critical decision factors
     - Overall investment thesis
 
-IMPORTANT: Return ONLY a valid JSON object with this exact structure:
+IMPORTANT FORMATTING RULES:
+- Use bullet points (•) for every section
+- MAXIMUM 3 bullet points per section
+- MAXIMUM 12 words per line
+- Be extremely concise and direct (telegraphic style)
+- Use SIMPLE, PLAIN ENGLISH (avoid complex jargon)
+- Explain technical terms simply if needed
+
+Return ONLY a valid JSON object with this exact structure:
 {
   "overallScore": number (0-100),
   "recommendation": "Buy" | "Watchlist" | "Avoid",
@@ -98,7 +106,8 @@ IMPORTANT: Return ONLY a valid JSON object with this exact structure:
   "finalVerdict": string
 }
 
-Ensure all strings are detailed paragraphs (minimum 2-3 sentences each) that reference specific data points from the input.`;
+Ensure all strings use the format:
+"• Point 1 (max 12 words)\\n• Point 2 (max 12 words)\\n• • Point 3 (max 12 words)"`;
 
 export const VALIDATION_PROMPT = `Review the generated stock analysis report for quality and accuracy.
 
